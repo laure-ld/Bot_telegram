@@ -167,6 +167,6 @@ def webhook():
 
 # === Webhook ===
 if __name__ == '__main__':
-    URL_RENDER = f"https://bot-veille-tech.onrender.com/{TELEGRAM_TOKEN}"
+    URL_RENDER = f"https://veille-techno-bot.onrender.com/{TELEGRAM_TOKEN}"
     bot.set_webhook(url=URL_RENDER)
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

@@ -102,13 +102,10 @@ def start(update, context):
 def help_command(update, context):
     update.message.reply_text(
         "📚 Commandes disponibles :\n"
-        "/python - Actualités python\n"
-        "/js - Actualités javaScript\n"
         "/ai - Actualités intelligence artificielle\n"
         "/cyber - Actualités cybersécurité\n"
-        "/react - Actualités react\n"
-        "/cloud - Actualités cloud\n"
-        "/tech - Actualités générales"
+        "/tech - Actualités générales\n"
+        "/search <mot-clé> - la recheche que vous souhaitez"
     )
 
 def get_news(update, context, keyword):
@@ -129,25 +126,26 @@ def get_news(update, context, keyword):
             return
 
         message = f"📰 Actus sur {keyword} :\n\n"
-        for i, article in enumerate(articles, 1):
+        for article in articles:
             title = article.get("title", "Sans titre")
             url = article.get("url", "#")
-            source = article.get("source", {}).get("name", "Source inconnue")
-            message += f"{i}. [{title}]({url})\n   Source: {source}\n\n"
+            date = article.get("publishedAt", "Date inconnue")
+            summary = article.get("description", "Pas de résumé")
 
-        update.message.reply_text(message, parse_mode="Markdown", disable_web_page_preview=True)
+            context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text=f"*{title}*\n_{date}_\n{summary}\n[Lire l'article]({url})",
+                parse_mode="Markdown",
+                disable_web_page_preview=True
+            )
 
     except Exception as e:
         update.message.reply_text(f"Erreur : {e}")
 
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
-dispatcher.add_handler(CommandHandler("python", lambda u, c: get_news(u, c, "Python programming")))
-dispatcher.add_handler(CommandHandler("js", lambda u, c: get_news(u, c, "JavaScript development")))
 dispatcher.add_handler(CommandHandler("ai", lambda u, c: get_news(u, c, "Artificial Intelligence")))
 dispatcher.add_handler(CommandHandler("cyber", lambda u, c: get_news(u, c, "Cybersecurity")))
-dispatcher.add_handler(CommandHandler("react", lambda u, c: get_news(u, c, "React")))
-dispatcher.add_handler(CommandHandler("cloud", lambda u, c: get_news(u, c, "Cloud computing")))
 dispatcher.add_handler(CommandHandler("tech", lambda u, c: get_news(u, c, "Technology")))
 dispatcher.add_handler(CommandHandler("search", search_news))
 

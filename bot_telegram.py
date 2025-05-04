@@ -82,14 +82,18 @@ def search_news(update, context):
                 return
 
             message = f"🔍 Résultats pour : *{query}*\n\n"
-            for i, article in enumerate(articles, 1):
+            for article in articles:
                 title = article.get("title", "Sans titre")
                 url = article.get("url", "#")
-                source = article.get("source", {}).get("name", "Source inconnue")
-                message += f"{i}. [{title}]({url})\n   Source: {source}\n\n"
+                date = article.get("publishedAt", "Date inconnue")
+                summary = article.get("description", "Pas de résumé")
 
-            update.message.reply_text(message, parse_mode="Markdown", disable_web_page_preview=True)
-
+                context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=f"*{title}*\n_{date}_\n{summary}\n[Lire l'article]({url})",
+                    parse_mode="Markdown",
+                    disable_web_page_preview=True
+                )
         else:
             update.message.reply_text(f"Erreur : {response.status_code}")
     except Exception as e:

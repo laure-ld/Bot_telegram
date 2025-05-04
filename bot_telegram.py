@@ -23,7 +23,7 @@ dispatcher = Dispatcher(bot=bot, update_queue=None, workers=4, use_context=True)
 # === Commandes ===
 def scheduler_daily():
     keywords = ["Technology", "Artificial Intelligence", "New technology"]
-    full_message = "👋 Hello ! Voici les news du jour:\n"
+    full_message = "👋 Hello ! J'espère que tu as bien dormi ! Voici les news du jour:\n"
     
     for keyword in keywords:
         params = {
@@ -41,11 +41,13 @@ def scheduler_daily():
             if articles: 
                 full_message += f"\n📰 *{keyword}* :\n\n"
                 
-                for i, article in enumerate(articles, 1):
-                    title = article.get("title", "sans titre")
+                for article in articles:
+                    title = article.get("title", "Sans titre")
                     url = article.get("url", "#")
+                    date = article.get("publishedAt", "Date inconnue")
                     source = article.get("source", {}).get("name", "source inconnue")
-                    full_message += f"{i}. [{title}]({url})\n   Source: {source}\n\n"
+                    summary = article.get("description", "Pas de résumé")
+                    full_message += f"\n*{title}*\n_{date}_ - {source}\n{summary}\n[Lire]({url})\n"
             
             else:
                 Update.message.reply_text(f"Aucun article trouvé.")

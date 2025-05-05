@@ -1,6 +1,8 @@
 import os
 import requests
 import pytz
+import psycopg2
+import atexit
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -9,16 +11,34 @@ from telegram.ext import Dispatcher, CommandHandler
 
 load_dotenv()
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 NEWS_API_TOKEN = os.getenv("NEWS_API_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 NEWSAPI_URL = "https://newsapi.org/v2/everything"
+
+
+# Connexion à PostgreSQL
+conn = psycopg2.connect(os.environ["DATABASE_URL"])
+cursor = conn.cursor()
 
 timezone = pytz.timezone('Europe/Paris')
 scheduler = BackgroundScheduler(timezone=timezone)
 bot = Bot(token=TELEGRAM_TOKEN)
 app = Flask(__name__)
 dispatcher = Dispatcher(bot=bot, update_queue=None, workers=4, use_context=True)
+
+# Création de la table
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS articles (
+        id SERIAL PRIMARY KEY,
+        title TEXT,
+        url TEXT,
+        date TIMESTAMP,
+        summary TEXT
+    );
+""")
+conn.commit()
 
 # === Commandes ===
 def scheduler_daily():
@@ -50,7 +70,7 @@ def scheduler_daily():
                     full_message += f"\n*{title}*\n_{date}_ - {source}\n{summary}\n[Lire]({url})\n"
             
             else:
-                Update.message.reply_text(f"Aucun article trouvé.")
+                full_message += f"Aucun article trouvé pour {keyword}.\n"
                 return
         except Exception as e:
                 full_message += f"Erreur lors de la récupération des actualités {keyword}: {e}\n"
@@ -148,6 +168,22 @@ def get_news(update, context, keyword):
     except Exception as e:
         update.message.reply_text(f"Erreur : {e}")
 
+def save_article_to_db(title, url, date, summary):
+    cursor.execute("""
+        INSERT INTO articles (title, url, date, summary)
+        VALUES (%s, %s, %s, %s);
+    """, (title, url, date, summary))
+    conn.commit()
+
+def get_latest_articles():
+    cursor.execute("SELECT * FROM articles ORDER BY date DESC LIMIT 5;")
+    rows = cursor.fetchall()
+    return rows
+
+def close_db_connection():
+    cursor.close()
+    conn.close()
+
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
 dispatcher.add_handler(CommandHandler("ai", lambda u, c: get_news(u, c, "Artificial Intelligence")))
@@ -169,4 +205,5 @@ def webhook():
 if __name__ == '__main__':
     URL_RENDER = f"https://veille-techno-bot.onrender.com/{TELEGRAM_TOKEN}"
     bot.set_webhook(url=URL_RENDER)
+    atexit.register(close_db_connection)
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

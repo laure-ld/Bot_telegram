@@ -29,16 +29,24 @@ app = Flask(__name__)
 dispatcher = Dispatcher(bot=bot, update_queue=None, workers=4, use_context=True)
 
 # Création de la table
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS articles (
-        id SERIAL PRIMARY KEY,
-        title TEXT,
-        url TEXT,
-        date TIMESTAMP,
-        summary TEXT
-    );
-""")
-conn.commit()
+def create_table_for_keyword(keyword):
+    table_name = keyword.lower().replace(" ", "_")
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id SERIAL PRIMARY KEY,
+            title TEXT,
+            url TEXT,
+            date TIMESTAMP,
+            summary TEXT
+        );
+    """)
+    conn.commit()
+
+# mots clés autorisé 
+keywords = ["ai", "tech", "cyber"]
+
+for kw in keywords:
+    create_table_for_keyword(kw)
 
 # === Commandes ===
 def scheduler_daily():
@@ -168,15 +176,18 @@ def get_news(update, context, keyword):
     except Exception as e:
         update.message.reply_text(f"Erreur : {e}")
 
-def save_article_to_db(title, url, date, summary):
-    cursor.execute("""
-        INSERT INTO articles (title, url, date, summary)
-        VALUES (%s, %s, %s, %s);
-    """, (title, url, date, summary))
+def save_article_to_db(kw, title, url, date, summary):
+    table_name = kw.lower().replace(" ", "_")
+    cursor.execute(
+        f"INSERT INTO {table_name} (title, url, date, summary) VALUES (%s, %s, %s, %s);",
+        (title, url, date, summary))
     conn.commit()
 
-def get_latest_articles():
-    cursor.execute("SELECT * FROM articles ORDER BY date DESC LIMIT 5;")
+def get_latest_articles(kw):
+    table_name = kw.lower().replace(" ", "_")
+    cursor.execute(
+        f"SELECT * FROM {table_name} ORDER BY date  DESC LIMIT 5;"
+    )
     rows = cursor.fetchall()
     return rows
 

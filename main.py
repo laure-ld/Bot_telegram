@@ -28,7 +28,7 @@ bot = Bot(token=TELEGRAM_TOKEN)
 app = Flask(__name__)
 dispatcher = Dispatcher(bot=bot, update_queue=None, workers=4, use_context=True)
 
-# Création de la table
+# Création des tables
 def create_table_for_keyword(keyword):
     table_name = keyword.lower().replace(" ", "_")
     cursor.execute(f"""
@@ -41,6 +41,14 @@ def create_table_for_keyword(keyword):
         );
     """)
     conn.commit()
+
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS subscribers (
+        id SERIAL PRIMARY KEY,
+        chat_id BIGINT UNIQUE
+    );
+""")
+conn.commit()
 
 # mots clés autorisé 
 keywords = ["ai", "tech", "cyber"]
@@ -83,7 +91,14 @@ def scheduler_daily():
         except Exception as e:
                 full_message += f"Erreur lors de la récupération des actualités {keyword}: {e}\n"
 
-    bot.send_message(chat_id=CHAT_ID, text=full_message, parse_mode="Markdown", disable_web_page_preview=True)
+    cursor.execute("SELECT chat_id FROM subscribers;")
+    subscribers = cursor.fetchall()
+
+    for (chat_id,) in subscribers:
+        try:
+            bot.send_message(chat_id=chat_id, text=full_message, parse_mode="Markdown", disable_web_page_preview=True)
+        except Exception as e:
+            print(f"Erreur d'envoi à {chat_id} : {e}")
 scheduler.add_job(scheduler_daily, 'cron', hour=9, minute=00)
 scheduler.start()
 
@@ -131,6 +146,9 @@ def search_news(update, context):
 
 
 def start(update, context):
+    chat_id = update.effective_chat.id
+    cursor.execute("INSERT INTO subscribers (chat_id) VALUES (%s) ON CONFLICT DO NOTHING;", (chat_id,))
+    conn.commit()
     update.message.reply_text("👋 Bienvenue dans le bot de veille techno ! Tape /help pour voir les commandes.")
 
 def help_command(update, context):

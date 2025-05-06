@@ -3,6 +3,7 @@ import requests
 import pytz
 import psycopg2
 import atexit
+from datetime import datetime
 from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
@@ -213,12 +214,35 @@ def close_db_connection():
     cursor.close()
     conn.close()
 
+def save_article (update, context):
+    if len(context.args) < 1: 
+        update.message.reply_text("Utilisation : /save <mot_clé>")
+        return
+    kw = context.args[0].lower().replace(" ", "_")
+
+    if kw not in keywords:
+        update.message.reply_text("Mot-clé non autorisé.")
+        return
+    
+    title = "Article par default"
+    url = "https://example.com"
+    date = datetime.now()
+    summary = "Résumé par défaut."
+
+    cursor.execute(
+        f"INSERT INTO {kw} (title, url, date, summary) VALUES (%s, %s, %s, %s);", (title, url, date, summary)
+    )
+    conn.commit()
+
+    update.message.reply_text(f"Article ajouté avec succès dans la catégorie *{kw}*!")
+
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
 dispatcher.add_handler(CommandHandler("ai", lambda u, c: get_news(u, c, "Artificial Intelligence")))
 dispatcher.add_handler(CommandHandler("cyber", lambda u, c: get_news(u, c, "Cybersecurity")))
 dispatcher.add_handler(CommandHandler("tech", lambda u, c: get_news(u, c, "Technology")))
 dispatcher.add_handler(CommandHandler("search", search_news))
+dispatcher.add_handler(CommandHandler("save", save_article))
 
 @app.route('/')
 def index():

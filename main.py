@@ -173,7 +173,8 @@ def help_command(update, context):
         "/ai - Actualités intelligence artificielle\n"
         "/cyber - Actualités cybersécurité\n"
         "/tech - Actualités générales\n"
-        "/search <mot-clé> - la recheche que vous souhaitez"
+        "/search <mot-clé> - la recheche que vous souhaitez\n"
+        "/save <mot-clé> - Séléctionner l'artcle avant et sauvergarder"
     )
 
 def get_news(update, context, keyword):

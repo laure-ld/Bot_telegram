@@ -160,7 +160,6 @@ def search_news(update, context):
     except Exception as e:
         update.message.reply_text(f"Une erreur est survenue : {e}")
 
-
 def start(update, context):
     chat_id = update.effective_chat.id
     cursor.execute("INSERT INTO subscribers (chat_id) VALUES (%s) ON CONFLICT DO NOTHING;", (chat_id,))
@@ -174,7 +173,8 @@ def help_command(update, context):
         "/cyber - Actualités cybersécurité\n"
         "/tech - Actualités générales\n"
         "/search <mot-clé> - la recheche que vous souhaitez\n"
-        "/save <mot-clé> - Séléctionner l'artcle avant et sauvergarder"
+        "/save <mot-clé> - Séléctionner l'artcle avant et sauvergarder\n"
+        "/show <mot-clé> - Récuperer vos articles enregiistrer"
     )
 
 def get_news(update, context, keyword):
@@ -252,6 +252,30 @@ def save_article (update, context):
 
     update.message.reply_text(f"Article ajouté avec succès dans la catégorie *{kw}*!")
 
+def show_articles (update, context):
+    if len(context.args) < 1 :
+        update.message.reply_text("Utilisation : /voir <mot_clé>")
+        return
+    kw = context.args[0].lower().replace(" ", "_")
+
+    if kw not in keywords :
+        update.message.reply_text("Mot-clé non reconnu.")
+        return
+    articles = get_latest_articles(kw)
+    if not articles:
+        update.message.reply_text("Aucun article trouvé.")
+        return
+
+    for article in articles :
+        title, url, date, summary = article
+        message = (
+            f"*{title}*\n"
+            f"_{date}_\n"
+            f"{summary}\n"
+            f"[Lire l'article]({url})"
+        )
+        update.message.reply_text(message, parse_mode="Markdown", disable_web_page_preview=True)
+
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
 dispatcher.add_handler(CommandHandler("ai", lambda u, c: get_news(u, c, "Artificial Intelligence")))
@@ -259,6 +283,7 @@ dispatcher.add_handler(CommandHandler("cyber", lambda u, c: get_news(u, c, "Cybe
 dispatcher.add_handler(CommandHandler("tech", lambda u, c: get_news(u, c, "Technology")))
 dispatcher.add_handler(CommandHandler("search", search_news))
 dispatcher.add_handler(CommandHandler("save", save_article))
+dispatcher.add_handler(CommandHandler("show", show_articles))
 
 @app.route('/')
 def index():

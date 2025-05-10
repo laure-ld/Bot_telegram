@@ -84,8 +84,6 @@ def scheduler_daily():
             articles = data.get("articles", [])
 
             if articles: 
-                message += f"\n📰 *{keyword}* :\n\n"
-                
                 for article in articles:
                     title = article.get("title", "Sans titre")
                     url = article.get("url", "#")
@@ -93,7 +91,7 @@ def scheduler_daily():
                     source = article.get("source", {}).get("name", "source inconnue")
                     summary = article.get("description", "Pas de résumé")
                     
-                    message(
+                    article_message = (
                         f"📰 *{keyword}*\n"
                         f"*{title}*\n"
                         f"_{date}_ - {source}\n"
@@ -105,16 +103,14 @@ def scheduler_daily():
                         try:
                             bot.send_message(
                                 chat_id=chat_id,
-                                text=message,
+                                text=article_message,
                                 parse_mode="Markdown",
                                 disable_web_page_preview=True
                             )
                         except Exception as e:
-                            print(f"❌ Erreur d'envoi à {chat_id} : {e}")
-                            
+                            print(f"❌ Erreur d'envoi à {chat_id} : {e}")                     
         except Exception as e:
                 full_message += f"Erreur lors de la récupération des actualités {keyword}: {e}\n"
-    print(full_message)
 scheduler.add_job(scheduler_daily, 'cron', hour=9, minute=0)
 scheduler.start()
   

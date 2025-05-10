@@ -250,7 +250,7 @@ def save_article (update, context):
 
 def show_articles (update, context):
     if len(context.args) < 1 :
-        update.message.reply_text("Utilisation : /voir <mot_clé>")
+        update.message.reply_text("Utilisation : /show <mot_clé>")
         return
     kw = context.args[0].lower().replace(" ", "_")
 
@@ -264,13 +264,13 @@ def show_articles (update, context):
 
     for article in articles :
         title, url, date, summary = article
-        message = (
-            f"*{title}*\n"
+        recup_message = (
+            f"📰*{title}*\n"
             f"_{date}_\n"
             f"{summary}\n"
             f"[Lire l'article]({url})"
         )
-        update.message.reply_text(message, parse_mode="Markdown", disable_web_page_preview=True)
+        update.message.reply_text(text=recup_message, parse_mode="Markdown", disable_web_page_preview=True)
 
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))

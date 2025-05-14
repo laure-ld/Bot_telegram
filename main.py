@@ -213,11 +213,30 @@ def save_article_to_db(kw, title, url, date, summary):
         f"INSERT INTO {table_name} (title, url, date, summary) VALUES (%s, %s, %s, %s);",
         (title, url, date, summary))
     conn.commit()
+def delete_article(update, context):
+    if len(context.args) < 2 :
+        update.message.reply_text("Utilisation : /delete <mot_clé> <id_article>")
+        return
+    kw = context.args[0].lower().replace(" ", "_")
+    article_id = context.args[1]
+
+    if kw not in keywords :
+        update.message.reply_text("Mot-clé non reconnu.")
+        return
+    articles = get_latest_articles(kw)
+    
+    try:
+        cursor.execute(f"DELETE FROM {kw} WHERE id = %s;", (article_id,))
+        conn.commit()
+        update.message.reply_text(f"🗑️ Article {article_id} supprimé avec succès de la catégorie {kw}.")
+    except Exception as e:
+        update.message.reply_text(f"❌ Erreur lors de la suppression : {e}")
+
 
 def get_latest_articles(kw):
     table_name = kw.lower().replace(" ", "_")
     cursor.execute(
-        f"SELECT title, url, date, summary FROM {table_name} ORDER BY date  DESC LIMIT 5;"
+        f"SELECT * FROM {table_name} ORDER BY date  DESC LIMIT 5;"
     )
     rows = cursor.fetchall()
     return rows
@@ -263,8 +282,9 @@ def show_articles (update, context):
         return
 
     for article in articles :
-        title, url, date, summary = article
+        article_id, title, url, date, summary = article
         recup_message = (
+            f"🆔 ID: {article_id}\n"
             f"📰*{title}*\n"
             f"_{date}_\n"
             f"{summary}\n"

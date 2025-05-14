@@ -213,6 +213,7 @@ def save_article_to_db(kw, title, url, date, summary):
         f"INSERT INTO {table_name} (title, url, date, summary) VALUES (%s, %s, %s, %s);",
         (title, url, date, summary))
     conn.commit()
+
 def delete_article(update, context):
     if len(context.args) < 2 :
         update.message.reply_text("Utilisation : /delete <mot_clé> <id_article>")
@@ -300,6 +301,7 @@ dispatcher.add_handler(CommandHandler("tech", lambda u, c: get_news(u, c, "Techn
 dispatcher.add_handler(CommandHandler("search", search_news))
 dispatcher.add_handler(CommandHandler("save", save_article))
 dispatcher.add_handler(CommandHandler("show", show_articles))
+dispatcher.add_handler(CommandHandler("sup", delete_article))
 
 @app.route('/')
 def index():

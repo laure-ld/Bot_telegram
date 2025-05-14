@@ -217,7 +217,7 @@ def save_article_to_db(kw, title, url, date, summary):
 def get_latest_articles(kw):
     table_name = kw.lower().replace(" ", "_")
     cursor.execute(
-        f"SELECT * FROM {table_name} ORDER BY date  DESC LIMIT 5;"
+        f"SELECT title, url, date, summary FROM {table_name} ORDER BY date  DESC LIMIT 5;"
     )
     rows = cursor.fetchall()
     return rows

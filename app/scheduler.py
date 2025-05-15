@@ -1,6 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-from app import bot, cursor
+from app.database import cursor
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
+from app import bot
 import requests
 
 scheduler = BackgroundScheduler()

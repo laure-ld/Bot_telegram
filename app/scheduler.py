@@ -69,4 +69,3 @@ def scheduler_daily():
 paris_tz = pytz.timezone('Europe/Paris')
 scheduler = BackgroundScheduler(timezone=paris_tz)
 scheduler.add_job(scheduler_daily, 'cron', hour=9, minute=0)
-scheduler.start()

@@ -1,5 +1,4 @@
 import os
-import atexit
 from app import routes, bot_handlers, scheduler
 from app.config import TELEGRAM_TOKEN
 from app.database import connect_db

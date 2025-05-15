@@ -5,7 +5,6 @@ from app.config import TELEGRAM_TOKEN
 from app.database import connect_db
 from app.routes import app
 from telegram import Bot
-from app.database import close_db_connection
 
 bot = Bot(token=TELEGRAM_TOKEN)
 
@@ -18,7 +17,6 @@ def main():
     bot.delete_webhook()
     bot.set_webhook(url)
 
-    atexit.register(close_db_connection)
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
 
 if __name__ == '__main__':

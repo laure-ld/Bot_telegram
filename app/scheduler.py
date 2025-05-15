@@ -3,6 +3,7 @@ from app.database import cursor
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from app import bot
 import requests
+import pytz
 
 scheduler = BackgroundScheduler()
 
@@ -65,6 +66,7 @@ def scheduler_daily():
     if error_log:
         print(error_log)
     pass
-
+paris_tz = pytz.timezone('Europe/Paris')
+scheduler = BackgroundScheduler(timezone=paris_tz)
 scheduler.add_job(scheduler_daily, 'cron', hour=9, minute=0)
 scheduler.start()

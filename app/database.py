@@ -9,6 +9,8 @@ def connect_db():
     cursor = conn.cursor()
     return conn, cursor
 
+conn, cursor = connect_db()
+
 def create_table_for_keyword(cursor, keyword):
     table_name = keyword.lower().replace(" ", "_")
     cursor.execute(f"""

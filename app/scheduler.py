@@ -5,8 +5,8 @@ from app import bot
 import requests
 import pytz
 
-scheduler = BackgroundScheduler()
-
+paris_tz = pytz.timezone('Europe/Paris')
+scheduler = BackgroundScheduler(timezone=paris_tz)
 
 def scheduler_daily():
     keywords = ["Technology", "Artificial Intelligence", "New technology"]
@@ -66,6 +66,5 @@ def scheduler_daily():
     if error_log:
         print(error_log)
     pass
-paris_tz = pytz.timezone('Europe/Paris')
-scheduler = BackgroundScheduler(timezone=paris_tz)
+
 scheduler.add_job(scheduler_daily, 'cron', hour=9, minute=0)

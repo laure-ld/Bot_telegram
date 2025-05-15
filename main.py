@@ -1,5 +1,6 @@
 import os
-from app import routes, bot_handlers, scheduler
+from app.scheduler import scheduler
+from app import routes, bot_handlers
 from app.config import TELEGRAM_TOKEN
 from app.database import connect_db
 from app.routes import app

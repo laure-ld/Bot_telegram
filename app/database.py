@@ -11,18 +11,20 @@ def connect_db():
 
 conn, cursor = connect_db()
 
-def create_table_for_keyword(cursor, keyword):
-    table_name = keyword.lower().replace(" ", "_")
-    cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
+def create_table_for_keyword(cursor):
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS saved_articles (
             id SERIAL PRIMARY KEY,
+            keyword TEXT,
             title TEXT,
             url TEXT,
             date TIMESTAMP,
-            summary TEXT
+            summary TEXT,
+            chat_id BIGINT
         );
     """)
     cursor.connection.commit()
+create_table_for_keyword(cursor)
 
 def initialize_database():
     conn, cursor = connect_db()

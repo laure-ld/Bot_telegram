@@ -1,33 +1,40 @@
+import requests
+import uuid
 from telegram.ext import CommandHandler
 from app import dispatcher
 from datetime import datetime
 from app.database import delete_article, get_latest_articles, conn, cursor, keywords
-import requests
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackQueryHandler
 
-def save_article(update, context):
-    if len(context.args) < 1: 
-        update.message.reply_text("Utilisation : /save <mot_clé>")
-        return
-    kw = context.args[0].lower().replace(" ", "_")
+#gestion de la taille du callback_data 
+temp_articles = {}
+                 
+def handle_callback(update, context):
+    query = update.callback_query
+    data = query.data
 
-    if kw not in keywords:
-        update.message.reply_text("Mot-clé non autorisé.")
-        return
-    
-    title = "Article par default"
-    url = "https://example.com"
-    date = datetime.now()
-    summary = "Résumé par défaut."
+    if data.startswith("save|"):
+        _, article_id = data.split("|")
+        chat_id = query.message.chat.id
+        article = temp_articles.get(article_id)
 
-    cursor.execute(
-        f"INSERT INTO {kw} (title, url, date, summary) VALUES (%s, %s, %s, %s);", (title, url, date, summary)
-    )
-    conn.commit()
+        if not article:
+            query.answer("❌ Article introuvable.")
+            return
+        
+        try:
+            cursor.execute(
+                "INSERT INTO saved_articles (chat_id, keyword, title) VALUES (%s, %s, %s);",
+                (chat_id, article['query'], article['title'])
+            )
+            conn.commit()
+            query.answer("✅ Article sauvegardé !")
+        except Exception as e:
+            print(e)
+            query.answer("❌ Erreur lors de la sauvegarde.")
 
-    update.message.reply_text(f"Article ajouté avec succès dans la catégorie *{kw}*!")
-
-    pass
 
 def show_articles(update, context):
     if len(context.args) < 1 :
@@ -106,10 +113,26 @@ def search_news(update, context):
                 date = article.get("publishedAt", "Date inconnue")
                 summary = article.get("description", "Pas de résumé")
 
+                short_title = title[:30].replace('|', '')
+                short_summary = summary[:40].replace('|', '')   
+                article_id = str(uuid.uuid4())[:8]
+
+                temp_articles[article_id] = {
+                    "query": query,
+                    "title": short_title,
+                    "url": url,
+                    "summary": short_summary,
+                    "date": date
+                }     
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
+                ])
+
                 context.bot.send_message(
                     chat_id=update.effective_chat.id,
                     text=f"*{title}*\n_{date}_\n{summary}\n[Lire l'article]({url})",
                     parse_mode="Markdown",
+                    reply_markup=keyboard,
                     disable_web_page_preview=True
                 )
         else:
@@ -176,6 +199,6 @@ dispatcher.add_handler(CommandHandler("ai", lambda u, c: get_news(u, c, "Artific
 dispatcher.add_handler(CommandHandler("cyber", lambda u, c: get_news(u, c, "Cybersecurity")))
 dispatcher.add_handler(CommandHandler("tech", lambda u, c: get_news(u, c, "Technology")))
 dispatcher.add_handler(CommandHandler("search", search_news))
-dispatcher.add_handler(CommandHandler("save", save_article))
 dispatcher.add_handler(CommandHandler("show", show_articles))
 dispatcher.add_handler(CommandHandler("sup", delete_article_command))
+dispatcher.add_handler(CallbackQueryHandler(handle_callback))

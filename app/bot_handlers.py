@@ -158,7 +158,8 @@ def delete_article_command(update, context):
     except Exception as e:
         update.message.reply_text(f"❌ Erreur lors de la suppression : {e}")
 
-def get_news(update, context, keyword):
+def search_keyword_news(update, context):
+    keyword = " ".join(context.args)
     params = {
         "apiKey": NEWS_API_TOKEN,
         "q": keyword,
@@ -182,10 +183,26 @@ def get_news(update, context, keyword):
             date = article.get("publishedAt", "Date inconnue")
             summary = article.get("description", "Pas de résumé")
 
+            short_title = title[:30].replace('|', '')
+            short_summary = summary[:40].replace('|', '')   
+            article_id = str(uuid.uuid4())[:8]
+
+            temp_articles[article_id] = {
+                "keyword": keyword,
+                "title": short_title,
+                "url": url,
+                "summary": short_summary,
+                "date": date
+            }    
+            keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
+                ])
+            
             context.bot.send_message(
                 chat_id=update.effective_chat.id,
                 text=f"*{title}*\n_{date}_\n{summary}\n[Lire l'article]({url})",
                 parse_mode="Markdown",
+                reply_markup=keyboard,
                 disable_web_page_preview=True
             )
 
@@ -195,9 +212,9 @@ def get_news(update, context, keyword):
 # Ajouter les handlers au dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
-dispatcher.add_handler(CommandHandler("ai", lambda u, c: get_news(u, c, "Artificial Intelligence")))
-dispatcher.add_handler(CommandHandler("cyber", lambda u, c: get_news(u, c, "Cybersecurity")))
-dispatcher.add_handler(CommandHandler("tech", lambda u, c: get_news(u, c, "Technology")))
+dispatcher.add_handler(CommandHandler("ai", lambda u, c: search_keyword_news(u, c, "Artificial Intelligence")))
+dispatcher.add_handler(CommandHandler("cyber", lambda u, c: search_keyword_news(u, c, "Cybersecurity")))
+dispatcher.add_handler(CommandHandler("tech", lambda u, c: search_keyword_news(u, c, "Technology")))
 dispatcher.add_handler(CommandHandler("search", search_news))
 dispatcher.add_handler(CommandHandler("show", show_articles))
 dispatcher.add_handler(CommandHandler("sup", delete_article_command))

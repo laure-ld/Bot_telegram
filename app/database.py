@@ -1,7 +1,7 @@
 import psycopg2
 import os
 
-keywords = ["ai", "tech", "cyber"]
+keywords = ["ai", "tech", "cyber", "all"]
 
 # Connexion à la base de données
 def connect_db():

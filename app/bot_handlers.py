@@ -2,7 +2,7 @@ import requests
 import uuid
 from telegram.ext import CommandHandler
 from app import dispatcher
-from app.database import delete_article, get_latest_articles, conn, cursor, keywords
+from app.database import delete_article, get_latest_articles, sanitize_keyword, conn, cursor, keywords
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
@@ -118,7 +118,7 @@ def search_news(update, context):
                 article_id = str(uuid.uuid4())[:8]
 
                 temp_articles[article_id] = {
-                    "query": query,
+                    "query": "all",
                     "title": short_title,
                     "url": url,
                     "summary": short_summary,
@@ -159,7 +159,12 @@ def delete_article_command(update, context):
         update.message.reply_text(f"❌ Erreur lors de la suppression : {e}")
 
 def search_keyword_news(update, context):
-    keyword = " ".join(context.args)
+    try:
+        keyword = sanitize_keyword(" ".join(context.args))
+    except ValueError:
+        update.message.reply_text("❌ Mot-clé non autorisé.")
+        return
+
     params = {
         "apiKey": NEWS_API_TOKEN,
         "q": keyword,

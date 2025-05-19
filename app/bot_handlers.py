@@ -50,7 +50,6 @@ def help_command(update, context):
         "/cyber - Actualités cybersécurité\n"
         "/tech - Actualités générales\n"
         "/search <mot-clé> - la recheche que vous souhaitez\n"
-        "/save <mot-clé> - Séléctionner l'artcle avant et sauvergarder\n"
         "/show <mot-clé> - Récuperer vos articles enregiistrer"
     )
     pass
@@ -158,9 +157,12 @@ def delete_article_command(update, context):
     except Exception as e:
         update.message.reply_text(f"❌ Erreur lors de la suppression : {e}")
 
-def search_keyword_news(update, context):
+def search_keyword_news(update, context, fixed_keyword=None):
     try:
-        keyword = sanitize_keyword(" ".join(context.args))
+        if fixed_keyword:
+            keyword = sanitize_keyword(fixed_keyword)
+        else:
+            keyword = sanitize_keyword(" ".join(context.args))
     except ValueError:
         update.message.reply_text("❌ Mot-clé non autorisé.")
         return

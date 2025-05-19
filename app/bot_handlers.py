@@ -219,9 +219,9 @@ def search_keyword_news(update, context, fixed_keyword=None):
 # Ajouter les handlers au dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
-dispatcher.add_handler(CommandHandler("ai", lambda u, c: search_keyword_news(u, c, "Artificial Intelligence")))
-dispatcher.add_handler(CommandHandler("cyber", lambda u, c: search_keyword_news(u, c, "Cybersecurity")))
-dispatcher.add_handler(CommandHandler("tech", lambda u, c: search_keyword_news(u, c, "Technology")))
+dispatcher.add_handler(CommandHandler("ai", lambda u, c: search_keyword_news(u, c, "ai")))
+dispatcher.add_handler(CommandHandler("cyber", lambda u, c: search_keyword_news(u, c, "cyber")))
+dispatcher.add_handler(CommandHandler("tech", lambda u, c: search_keyword_news(u, c, "tech")))
 dispatcher.add_handler(CommandHandler("search", search_news))
 dispatcher.add_handler(CommandHandler("show", show_articles))
 dispatcher.add_handler(CommandHandler("sup", delete_article_command))

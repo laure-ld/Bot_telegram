@@ -2,15 +2,15 @@ import requests
 import uuid
 from telegram.ext import CommandHandler
 from app import dispatcher
-from datetime import datetime
 from app.database import delete_article, get_latest_articles, conn, cursor, keywords
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
 
-#gestion de la taille du callback_data 
+# Stockage temporaire des articles 
 temp_articles = {}
-                 
+
+# Gere l'interaction avec le button sauvergarder
 def handle_callback(update, context):
     query = update.callback_query
     data = query.data
@@ -35,6 +35,25 @@ def handle_callback(update, context):
             print(e)
             query.answer("❌ Erreur lors de la sauvegarde.")
 
+# Commande principale 
+def start(update, context):
+    chat_id = update.effective_chat.id
+    cursor.execute("INSERT INTO subscribers (chat_id) VALUES (%s) ON CONFLICT DO NOTHING;", (chat_id,))
+    conn.commit()
+    update.message.reply_text("👋 Bienvenue dans le bot de veille techno ! Tape /help pour voir les commandes.")
+    pass
+
+def help_command(update, context):
+    update.message.reply_text(
+        "📚 Commandes disponibles :\n"
+        "/ai - Actualités intelligence artificielle\n"
+        "/cyber - Actualités cybersécurité\n"
+        "/tech - Actualités générales\n"
+        "/search <mot-clé> - la recheche que vous souhaitez\n"
+        "/save <mot-clé> - Séléctionner l'artcle avant et sauvergarder\n"
+        "/show <mot-clé> - Récuperer vos articles enregiistrer"
+    )
+    pass
 
 def show_articles(update, context):
     if len(context.args) < 1 :
@@ -61,25 +80,6 @@ def show_articles(update, context):
         )
         update.message.reply_text(text=recup_message, parse_mode="Markdown", disable_web_page_preview=True)
 
-    pass
-
-def start(update, context):
-    chat_id = update.effective_chat.id
-    cursor.execute("INSERT INTO subscribers (chat_id) VALUES (%s) ON CONFLICT DO NOTHING;", (chat_id,))
-    conn.commit()
-    update.message.reply_text("👋 Bienvenue dans le bot de veille techno ! Tape /help pour voir les commandes.")
-    pass
-
-def help_command(update, context):
-    update.message.reply_text(
-        "📚 Commandes disponibles :\n"
-        "/ai - Actualités intelligence artificielle\n"
-        "/cyber - Actualités cybersécurité\n"
-        "/tech - Actualités générales\n"
-        "/search <mot-clé> - la recheche que vous souhaitez\n"
-        "/save <mot-clé> - Séléctionner l'artcle avant et sauvergarder\n"
-        "/show <mot-clé> - Récuperer vos articles enregiistrer"
-    )
     pass
 
 def search_news(update, context):
@@ -188,7 +188,7 @@ def search_keyword_news(update, context):
             article_id = str(uuid.uuid4())[:8]
 
             temp_articles[article_id] = {
-                "keyword": keyword,
+                "query": keyword,
                 "title": short_title,
                 "url": url,
                 "summary": short_summary,

@@ -3,6 +3,7 @@ import os
 
 keywords = ["ai", "tech", "cyber"]
 
+# Connexion à la base de données
 def connect_db():
     DATABASE_URL = os.getenv("DATABASE_URL")
     conn = psycopg2.connect(DATABASE_URL)
@@ -11,6 +12,7 @@ def connect_db():
 
 conn, cursor = connect_db()
 
+# Création des tables
 def create_table_for_keyword(cursor):
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS saved_articles (
@@ -40,12 +42,14 @@ def initialize_database():
     cursor.close()
     conn.close()
 
+# Nettoyage et validation d'un mot-clé fourni par l'utilisateur
 def sanitize_keyword(kw):
     kw = kw.lower().replace(" ", "_")
     if kw not in keywords:
         raise ValueError("Mot-clé non autorisé")
     return kw
 
+# Commande de base 
 def get_latest_articles(kw):
     conn, cursor = connect_db()
     try:

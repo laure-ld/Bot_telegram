@@ -2,7 +2,7 @@ import requests
 import uuid
 from telegram.ext import CommandHandler
 from app import dispatcher
-from app.database import delete_article, get_latest_articles, sanitize_keyword, conn, cursor, keywords
+from app.database import delete_article, sanitize_keyword, conn, cursor, keywords
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
@@ -11,8 +11,6 @@ from telegram.ext import CallbackQueryHandler
 def handle_callback(update, context):
     query = update.callback_query
     data = query.data
-
-    query.answer()
 
     if data.startswith("save|"):
         _, article_id = data.split("|")

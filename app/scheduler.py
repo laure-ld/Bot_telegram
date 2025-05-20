@@ -2,7 +2,7 @@ import requests
 import pytz
 import uuid
 from apscheduler.schedulers.background import BackgroundScheduler
-from app.database import cursor, temporary_articles
+from app.database import cursor
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from app import bot
 from app.database import conn

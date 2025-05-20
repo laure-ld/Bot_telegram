@@ -55,6 +55,7 @@ def create_temporary_articles_table():
         );
     """)
     conn.commit()
+create_temporary_articles_table()
 
 # Nettoyage et validation d'un mot-clé fourni par l'utilisateur
 def sanitize_keyword(kw):

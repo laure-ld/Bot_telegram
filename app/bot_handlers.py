@@ -35,6 +35,16 @@ def handle_callback(update, context):
             print(e)
             query.answer("❌ Erreur lors de la sauvegarde.")
 
+# Fonction utilitaire : génère le message formaté pour un article
+def format_article_message(keyword, title, date, source, summary, url):
+    return (
+        f"📰 *{keyword}*\n"
+        f"*{title}*\n"
+        f"_{date}_ - {source}\n"
+        f"{summary}\n"
+        f"[Lire l'article]({url})"
+    )
+
 # Commande principale 
 def start(update, context):
     chat_id = update.effective_chat.id
@@ -105,39 +115,43 @@ def search_news(update, context):
                 update.message.reply_text(f"Aucun article trouvé pour : {query}")
                 return
 
-            message = f"🔍 Résultats pour : *{query}*\n\n"
+            chat_id = update.effective_chat.id
+
             for article in articles:
                 title = article.get("title", "Sans titre")
                 url = article.get("url", "#")
                 date = article.get("publishedAt", "Date inconnue")
+                source = article.get("source", {}).get("name", "source inconnue")
                 summary = article.get("description", "Pas de résumé")
 
                 short_title = title[:30].replace('|', '')
-                short_summary = summary[:40].replace('|', '')   
+                short_summary = summary[:40].replace('|', '')
                 article_id = str(uuid.uuid4())[:8]
 
-                temp_articles[article_id] = {
-                    "query": "all",
-                    "title": short_title,
-                    "url": url,
-                    "summary": short_summary,
-                    "date": date
-                }     
+                # Insertion dans la table temporary_articles
+                cursor.execute(
+                    "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    (article_id, chat_id, query, short_title, url, short_summary, date)
+                )
+                conn.commit()
+
+                # Génération du bouton et envoi
                 keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
                 ])
+                message = format_article_message(query, title, date, source, summary, url)
 
                 context.bot.send_message(
-                    chat_id=update.effective_chat.id,
-                    text=f"*{title}*\n_{date}_\n{summary}\n[Lire l'article]({url})",
+                    chat_id=chat_id,
+                    text=message,
                     parse_mode="Markdown",
                     reply_markup=keyboard,
                     disable_web_page_preview=True
                 )
         else:
-            update.message.reply_text(f"Erreur : {response.status_code}")
+            update.message.reply_text(f"Erreur API : {response.status_code}")
     except Exception as e:
-        update.message.reply_text(f"Une erreur est survenue : {e}")
+        update.message.reply_text(f"❌ Une erreur est survenue : {e}")
 
 def delete_article_command(update, context):
     if len(context.args) < 2 :
@@ -174,6 +188,7 @@ def search_keyword_news(update, context, fixed_keyword=None):
         "sortBy": "publishedAt",
         "pageSize": 3
     }
+
     try:
         response = requests.get(NEWS_API_URL, params=params)
         data = response.json()
@@ -183,7 +198,6 @@ def search_keyword_news(update, context, fixed_keyword=None):
             update.message.reply_text(f"Aucun article trouvé sur {keyword}.")
             return
 
-        message = f"📰 Actus sur {keyword} :\n\n"
         for article in articles:
             title = article.get("title", "Sans titre")
             url = article.get("url", "#")
@@ -191,30 +205,38 @@ def search_keyword_news(update, context, fixed_keyword=None):
             summary = article.get("description", "Pas de résumé")
 
             short_title = title[:30].replace('|', '')
-            short_summary = summary[:40].replace('|', '')   
+            short_summary = summary[:40].replace('|', '')
             article_id = str(uuid.uuid4())[:8]
+            chat_id = update.effective_chat.id
 
-            temp_articles[article_id] = {
-                "query": keyword,
-                "title": short_title,
-                "url": url,
-                "summary": short_summary,
-                "date": date
-            }    
+            try:
+                cursor.execute(
+                    "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                    (article_id, chat_id, keyword, short_title, url, short_summary, date)
+                )
+                conn.commit()
+            except Exception as e:
+                print(f"Erreur DB : {e}")
+
+            article_message = format_article_message(keyword, title, date, article.get("source", {}).get("name", "Source inconnue"), summary, url)
+
             keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
-                ])
-            
-            context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text=f"*{title}*\n_{date}_\n{summary}\n[Lire l'article]({url})",
-                parse_mode="Markdown",
-                reply_markup=keyboard,
-                disable_web_page_preview=True
-            )
+                [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
+            ])
+
+            try:
+                context.bot.send_message(
+                    chat_id=chat_id,
+                    text=article_message,
+                    parse_mode="Markdown",
+                    reply_markup=keyboard,
+                    disable_web_page_preview=True
+                )
+            except Exception as e:
+                update.message.reply_text(f"❌ Erreur d'envoi d'article : {e}")
 
     except Exception as e:
-        update.message.reply_text(f"Erreur : {e}")
+        update.message.reply_text(f"❌ Erreur : {e}")
 
 # Ajouter les handlers au dispatcher
 dispatcher.add_handler(CommandHandler("start", start))

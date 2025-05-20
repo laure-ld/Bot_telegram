@@ -42,6 +42,20 @@ def initialize_database():
     cursor.close()
     conn.close()
 
+def create_temporary_articles_table():
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS temporary_articles (
+            article_id VARCHAR(10) PRIMARY KEY,
+            chat_id BIGINT,
+            keyword TEXT,
+            title TEXT,
+            url TEXT,
+            summary TEXT,
+            date TEXT
+        );
+    """)
+    conn.commit()
+
 # Nettoyage et validation d'un mot-clé fourni par l'utilisateur
 def sanitize_keyword(kw):
     kw = kw.lower().replace(" ", "_")
@@ -88,4 +102,5 @@ def delete_article(kw, article_id):
 
 if __name__ == "__main__":
     initialize_database()
+    create_temporary_articles_table()
     print("✅ Base de données initialisée.")

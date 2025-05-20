@@ -2,7 +2,7 @@ import requests
 import pytz
 import uuid
 from apscheduler.schedulers.background import BackgroundScheduler
-from app.database import cursor
+from app.database import cursor, temporary_articles
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from app import bot
 from app.database import conn
@@ -19,16 +19,24 @@ def handle_callback(update, context):
     if data.startswith("save|"):
         _, article_id = data.split("|")
         chat_id = query.message.chat.id
-        article = temp_articles.get(article_id)
 
-        if not article:
+        # On récupère les infos de l'article temporaire
+        cursor.execute(
+            "SELECT keyword, title FROM temporary_articles WHERE article_id = %s AND chat_id = %s",
+            (article_id, chat_id)
+        )
+        result = cursor.fetchone()
+
+        if not result:
             query.answer("❌ Article introuvable.")
             return
-        
+
+        keyword, title = result
+
         try:
             cursor.execute(
-                "INSERT INTO saved_articles (chat_id, keyword, title) VALUES (%s, %s, %s);",
-                (chat_id, article['query'], article['title'])
+                "INSERT INTO saved_articles (chat_id, keyword, title) VALUES (%s, %s, %s)",
+                (chat_id, keyword, title)
             )
             conn.commit()
             query.answer("✅ Article sauvegardé !")
@@ -71,21 +79,22 @@ def scheduler_daily():
             "sortBy": "publishedAt",
             "pageSize": 2
         }
+
         try:
             response = requests.get(NEWS_API_URL, params=params)
             data = response.json()
             articles = data.get("articles", [])
 
-            if articles: 
+            if articles:
                 for article in articles:
                     title = article.get("title", "Sans titre")
                     url = article.get("url", "#")
                     date = article.get("publishedAt", "Date inconnue")
                     source = article.get("source", {}).get("name", "source inconnue")
                     summary = article.get("description", "Pas de résumé")
-                    
+
                     short_title = title[:30].replace('|', '')
-                    short_summary = summary[:40].replace('|', '')   
+                    short_summary = summary[:40].replace('|', '')
                     article_id = str(uuid.uuid4())[:8]
 
                     temp_articles[article_id] = {
@@ -94,7 +103,8 @@ def scheduler_daily():
                         "url": url,
                         "summary": short_summary,
                         "date": date
-                    }     
+                    }
+
                     keyboard = InlineKeyboardMarkup([
                         [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
                     ])
@@ -102,7 +112,14 @@ def scheduler_daily():
                     article_message = format_article_message(keyword, title, date, source, summary, url)
 
                     for (chat_id,) in subscribers:
+                        # 🔽 Insertion correcte ici, après avoir toutes les données
                         try:
+                            cursor.execute(
+                                "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                                (article_id, chat_id, keyword, short_title, url, short_summary, date)
+                            )
+                            conn.commit()
+
                             bot.send_message(
                                 chat_id=chat_id,
                                 text=article_message,
@@ -111,11 +128,11 @@ def scheduler_daily():
                                 disable_web_page_preview=True
                             )
                         except Exception as e:
-                            print(f"❌ Erreur d'envoi à {chat_id} : {e}")                     
+                            print(f"❌ Erreur d'envoi ou d'insertion pour {chat_id} : {e}")
         except Exception as e:
-                full_message += f"Erreur lors de la récupération des actualités {keyword}: {e}\n"
+            error_log += f"Erreur lors de la récupération des actualités '{keyword}' : {e}\n"
+
     if error_log:
         print(error_log)
-    pass
 
 scheduler.add_job(scheduler_daily, 'cron', hour=9, minute=0)

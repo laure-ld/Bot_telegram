@@ -20,7 +20,6 @@ def handle_callback(update, context):
         _, article_id = data.split("|")
         chat_id = query.message.chat.id
 
-        # On récupère les infos de l'article temporaire
         cursor.execute(
             "SELECT keyword, title FROM temporary_articles WHERE article_id = %s AND chat_id = %s",
             (article_id, chat_id)

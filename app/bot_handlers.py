@@ -7,32 +7,47 @@ from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
 
-# Stockage temporaire des articles 
-temp_articles = {}
-
 # Gere l'interaction avec le button sauvergarder
 def handle_callback(update, context):
     query = update.callback_query
     data = query.data
 
+    query.answer()
+
     if data.startswith("save|"):
         _, article_id = data.split("|")
         chat_id = query.message.chat.id
-        article = temp_articles.get(article_id)
 
-        if not article:
-            query.answer("❌ Article introuvable.")
-            return
-        
         try:
             cursor.execute(
-                "INSERT INTO saved_articles (chat_id, keyword, title) VALUES (%s, %s, %s);",
-                (chat_id, article['query'], article['title'])
+                "SELECT keyword, title, url, summary, date FROM temporary_articles WHERE article_id = %s AND chat_id = %s",
+                (article_id, chat_id)
+            )
+            result = cursor.fetchone()
+
+            if not result:
+                query.answer("❌ Article introuvable.")
+                return
+
+            keyword, title, url, summary, date = result
+
+            cursor.execute(
+                "SELECT 1 FROM saved_articles WHERE chat_id = %s AND title = %s",
+                (chat_id, title)
+            )
+            if cursor.fetchone():
+                query.answer("⚠️ Article déjà sauvegardé.")
+                return
+
+            cursor.execute(
+                "INSERT INTO saved_articles (chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s);",
+                (chat_id, keyword, title, url, summary, date)
             )
             conn.commit()
             query.answer("✅ Article sauvegardé !")
+
         except Exception as e:
-            print(e)
+            print(f"Erreur lors de la sauvegarde : {e}")
             query.answer("❌ Erreur lors de la sauvegarde.")
 
 # Fonction utilitaire : génère le message formaté pour un article
@@ -51,7 +66,7 @@ def start(update, context):
     cursor.execute("INSERT INTO subscribers (chat_id) VALUES (%s) ON CONFLICT DO NOTHING;", (chat_id,))
     conn.commit()
     update.message.reply_text("👋 Bienvenue dans le bot de veille techno ! Tape /help pour voir les commandes.")
-    pass
+
 
 def help_command(update, context):
     update.message.reply_text(
@@ -60,9 +75,8 @@ def help_command(update, context):
         "/cyber - Actualités cybersécurité\n"
         "/tech - Actualités générales\n"
         "/search <mot-clé> - la recheche que vous souhaitez\n"
-        "/show <mot-clé> - Récuperer vos articles enregiistrer"
+        "/show <mot-clé> - Récuperer vos articles enregistrés"
     )
-    pass
 
 def show_articles(update, context):
     if len(context.args) < 1 :
@@ -124,18 +138,15 @@ def search_news(update, context):
                 source = article.get("source", {}).get("name", "source inconnue")
                 summary = article.get("description", "Pas de résumé")
 
-                short_title = title[:30].replace('|', '')
-                short_summary = summary[:40].replace('|', '')
+                short_title = (title or "")[:30].replace('|', '')
+                short_summary = (summary or "")[:40].replace('|', '')
                 article_id = str(uuid.uuid4())[:8]
 
-                # Insertion dans la table temporary_articles
                 cursor.execute(
                     "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                     (article_id, chat_id, query, short_title, url, short_summary, date)
                 )
-                conn.commit()
 
-                # Génération du bouton et envoi
                 keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
                 ])
@@ -148,6 +159,8 @@ def search_news(update, context):
                     reply_markup=keyboard,
                     disable_web_page_preview=True
                 )
+            conn.commit()
+
         else:
             update.message.reply_text(f"Erreur API : {response.status_code}")
     except Exception as e:

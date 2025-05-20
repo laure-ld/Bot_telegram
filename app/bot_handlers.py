@@ -116,6 +116,7 @@ def show_articles(update, context):
                 disable_web_page_preview=True
             )
     except Exception as e:
+        conn.rollback()
         update.message.reply_text(f"❌ Erreur lors de la récupération : {e}")
 
 def search_news(update, context):
@@ -179,6 +180,7 @@ def search_news(update, context):
         else:
             update.message.reply_text(f"Erreur API : {response.status_code}")
     except Exception as e:
+        conn.rollback()
         update.message.reply_text(f"❌ Une erreur est survenue : {e}")
 
 def delete_article_command(update, context):
@@ -196,6 +198,7 @@ def delete_article_command(update, context):
         delete_article(cursor, kw, article_id)
         update.message.reply_text(f"🗑️ Article {article_id} supprimé avec succès de la catégorie {kw}.")
     except Exception as e:
+        conn.rollback()
         update.message.reply_text(f"❌ Erreur lors de la suppression : {e}")
 
 def search_keyword_news(update, context, fixed_keyword=None):
@@ -263,6 +266,7 @@ def search_keyword_news(update, context, fixed_keyword=None):
                 update.message.reply_text(f"❌ Erreur d'envoi d'article : {e}")
 
     except Exception as e:
+        conn.rollback()
         update.message.reply_text(f"❌ Erreur : {e}")
 
 # Ajouter les handlers au dispatcher

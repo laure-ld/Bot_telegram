@@ -17,12 +17,12 @@ def create_table_for_keyword(cursor):
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS saved_articles (
             id SERIAL PRIMARY KEY,
+            chat_id BIGINT,
             keyword TEXT,
             title TEXT,
             url TEXT,
-            date TIMESTAMP,
             summary TEXT,
-            chat_id BIGINT
+            date TIMESTAMP
         );
     """)
     cursor.connection.commit()
@@ -78,15 +78,19 @@ def get_latest_articles(kw):
         conn.close()
     return results
 
-def save_article_to_db(kw, title, url, date, summary):
+def save_article_to_db(chat_id, keyword, title, url, date, summary):
     conn, cursor = connect_db()
-    table_name = kw.lower().replace(" ", "_")
-    cursor.execute(
-        f"INSERT INTO {table_name} (title, url, date, summary) VALUES (%s, %s, %s, %s);",
-        (title, url, date, summary))
-    conn.commit()
-    cursor.close()
-    conn.close()
+    try:
+        cursor.execute(
+            "INSERT INTO saved_articles (chat_id, keyword, title, url, date, summary) VALUES (%s, %s, %s, %s, %s, %s);",
+            (chat_id, keyword, title, url, date, summary)
+        )
+        conn.commit()
+    except Exception as e:
+        print(f"Erreur lors de l'insertion : {e}")
+    finally:
+        cursor.close()
+        conn.close()
 
 def delete_article(kw, article_id):
     conn, cursor = connect_db()

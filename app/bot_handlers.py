@@ -67,7 +67,6 @@ def start(update, context):
     conn.commit()
     update.message.reply_text("👋 Bienvenue dans le bot de veille techno ! Tape /help pour voir les commandes.")
 
-
 def help_command(update, context):
     update.message.reply_text(
         "📚 Commandes disponibles :\n"
@@ -79,31 +78,45 @@ def help_command(update, context):
     )
 
 def show_articles(update, context):
-    if len(context.args) < 1 :
+    if len(context.args) < 1:
         update.message.reply_text("Utilisation : /show <mot_clé>")
         return
-    kw = context.args[0].lower().replace(" ", "_")
 
-    if kw not in keywords :
+    keyword = context.args[0].lower().replace(" ", "_")
+
+    if keyword not in keywords:
         update.message.reply_text("Mot-clé non reconnu.")
         return
-    articles = get_latest_articles(kw)
-    if not articles:
-        update.message.reply_text("Aucun article trouvé.")
-        return
 
-    for article in articles :
-        article_id, title, url, date, summary = article
-        recup_message = (
-            f"🆔 ID: {article_id}\n"
-            f"📰*{title}*\n"
-            f"_{date}_\n"
-            f"{summary}\n"
-            f"[Lire l'article]({url})"
+    chat_id = update.effective_chat.id
+
+    try:
+        cursor.execute(
+            "SELECT id, title, url, date, summary FROM saved_articles WHERE chat_id = %s AND keyword = %s ORDER BY date DESC",
+            (chat_id, keyword)
         )
-        update.message.reply_text(text=recup_message, parse_mode="Markdown", disable_web_page_preview=True)
+        articles = cursor.fetchall()
 
-    pass
+        if not articles:
+            update.message.reply_text("Aucun article sauvegardé pour ce mot-clé.")
+            return
+
+        for article in articles:
+            article_id, title, url, date, summary = article
+            recup_message = (
+                f"🆔 ID: {article_id}\n"
+                f"📰 *{title}*\n"
+                f"📅 _{date}_\n"
+                f"{summary}\n"
+                f"[Lire l'article]({url})"
+            )
+            update.message.reply_text(
+                text=recup_message,
+                parse_mode="Markdown",
+                disable_web_page_preview=True
+            )
+    except Exception as e:
+        update.message.reply_text(f"❌ Erreur lors de la récupération : {e}")
 
 def search_news(update, context):
     if not context.args:
@@ -111,6 +124,8 @@ def search_news(update, context):
         return
 
     query = " ".join(context.args)
+    keyword = query.lower().replace(" ", "_")
+
     try:
         params = {
             "apiKey": NEWS_API_TOKEN,
@@ -144,7 +159,7 @@ def search_news(update, context):
 
                 cursor.execute(
                     "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                    (article_id, chat_id, query, short_title, url, short_summary, date)
+                    (article_id, chat_id, keyword, short_title, url, short_summary, date)
                 )
 
                 keyboard = InlineKeyboardMarkup([
@@ -176,7 +191,6 @@ def delete_article_command(update, context):
     if kw not in keywords :
         update.message.reply_text("Mot-clé non reconnu.")
         return
-    articles = get_latest_articles(kw)
     
     try:
         delete_article(cursor, kw, article_id)

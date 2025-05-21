@@ -111,7 +111,6 @@ def scheduler_daily():
                     article_message = format_article_message(keyword, title, date, source, summary, url)
 
                     for (chat_id,) in subscribers:
-                        # 🔽 Insertion correcte ici, après avoir toutes les données
                         try:
                             cursor.execute(
                                 "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",

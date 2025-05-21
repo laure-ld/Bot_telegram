@@ -1,7 +1,7 @@
 import psycopg2
 import os
 
-keywords = ["ai", "tech", "cyber", "all"]
+keywords = ["ai", "tech", "cyber", "archive"]
 
 # Connexion à la base de données
 def connect_db():
@@ -78,20 +78,6 @@ def get_latest_articles(kw):
         cursor.close()
         conn.close()
     return results
-
-def save_article_to_db(chat_id, keyword, title, url, date, summary):
-    conn, cursor = connect_db()
-    try:
-        cursor.execute(
-            "INSERT INTO saved_articles (chat_id, keyword, title, url, date, summary) VALUES (%s, %s, %s, %s, %s, %s);",
-            (chat_id, keyword, title, url, date, summary)
-        )
-        conn.commit()
-    except Exception as e:
-        print(f"Erreur lors de l'insertion : {e}")
-    finally:
-        cursor.close()
-        conn.close()
 
 def delete_article(conn, cursor, kw, article_id):
     try:

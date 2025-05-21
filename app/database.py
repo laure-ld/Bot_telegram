@@ -93,17 +93,14 @@ def save_article_to_db(chat_id, keyword, title, url, date, summary):
         cursor.close()
         conn.close()
 
-def delete_article(cursor, kw, article_id):
-    conn, cursor = connect_db()
+def delete_article(conn, cursor, kw, article_id):
     try:
         table_name = sanitize_keyword(kw)
         cursor.execute(f"DELETE FROM {table_name} WHERE id = %s;", (article_id,))
         conn.commit()
     except Exception as e:
         print(f"Erreur lors de la suppression de l'article : {e}")
-    finally:
-        cursor.close()
-        conn.close()
+        raise
 
 if __name__ == "__main__":
     initialize_database()

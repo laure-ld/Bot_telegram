@@ -2,7 +2,7 @@ import requests
 import uuid
 from telegram.ext import CommandHandler
 from app import dispatcher
-from app.database import delete_article, sanitize_keyword, conn, cursor, keywords
+from app.database import delete_article, sanitize_keyword, connect_db, conn, cursor, keywords
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
@@ -197,14 +197,16 @@ def delete_article_command(update, context):
     if kw not in keywords:
         update.message.reply_text("❌ Mot-clé non reconnu.")
         return
-
+    conn, cursor = connect_db()
     try:
-        delete_article(cursor, kw, article_id)
-        conn.commit()
+        delete_article(conn, cursor, kw, article_id)
         update.message.reply_text(f"🗑️ Article {article_id} supprimé avec succès de la catégorie '{kw}'.")
     except Exception as e:
         conn.rollback()
         update.message.reply_text(f"❌ Erreur lors de la suppression : {e}")
+    finally:
+        cursor.close()
+        conn.close()
 
 def search_keyword_news(update, context, fixed_keyword=None):
     try:

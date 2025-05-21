@@ -80,12 +80,19 @@ def start(update, context):
 
 def help_command(update, context):
     update.message.reply_text(
-        "📚 Commandes disponibles :\n"
-        "/ai - Actualités intelligence artificielle\n"
-        "/cyber - Actualités cybersécurité\n"
-        "/tech - Actualités générales\n"
-        "/search <mot-clé> - la recheche que vous souhaitez\n"
-        "/show <mot-clé> - Récuperer vos articles enregistrés"
+        "📚 *Commandes disponibles :*\n\n"
+        "🔎 *Consultation des actualités :*\n"
+        "• `/ai` – Actualités sur l'intelligence artificielle\n"
+        "• `/cyber` – Actualités sur la cybersécurité\n"
+        "• `/tech` – Actualités tech générales\n\n"
+        "🔍 *Recherche personnalisée :*\n"
+        "• `/search <mot-clé>` – Rechercher des articles spécifiques\n\n"
+        "💾 *Gestion de vos articles enregistrés :*\n"
+        "• `/show <mot-clé>` – Voir vos articles sauvegardés (ex: `ai`, `cyber`...)\n"
+        "• `/delete <mot-clé> <id>` – Supprimer un article par ID dans une catégorie\n\n"
+        "🗂️ *À propos d'`archive` :*\n"
+        "Utilisez le mot-clé `archive` pour consulter l'ensemble des articles sauvegardés dans le temps.\n"
+        "Exemple : `/show archive` ou `/delete archive 12`"
     )
 
 def show_articles(update, context):

@@ -44,12 +44,12 @@ def handle_callback(update, context):
 
             cursor.execute(
                 "SELECT 1 FROM saved_articles WHERE chat_id = %s AND title = %s AND keyword = %s",
-                (chat_id, title, 'all')
+                (chat_id, title, 'archive')
             )
             if not cursor.fetchone():
                 cursor.execute(
                     "INSERT INTO saved_articles (chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s);",
-                    (chat_id, 'all', title, url, summary, date)
+                    (chat_id, 'archive', title, url, summary, date)
                 )
 
             conn.commit()

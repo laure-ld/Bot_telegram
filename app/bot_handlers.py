@@ -2,10 +2,12 @@ import requests
 import uuid
 from telegram.ext import CommandHandler
 from app import dispatcher
-from app.database import delete_article, sanitize_keyword, connect_db, conn, cursor, keywords
+from app.database import delete_article, sanitize_keyword, connect_db, keywords
 from app.config import NEWS_API_TOKEN, NEWS_API_URL
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackQueryHandler
+
+conn, cursor = connect_db()
 
 # Gere l'interaction avec le button sauvergarder
 def handle_callback(update, context):
@@ -197,7 +199,7 @@ def delete_article_command(update, context):
         update.message.reply_text("Utilisation : /delete <mot_clé> <id_article>")
         return
 
-    kw = context.args[0].lower().replace(" ", "_")
+    kw = context.args[0]
 
     try:
         article_id = int(context.args[1])

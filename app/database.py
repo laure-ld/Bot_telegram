@@ -28,6 +28,28 @@ def create_table_for_keyword(cursor):
     cursor.connection.commit()
 create_table_for_keyword(cursor)
 
+def create_saved_articles_table():
+    conn, cursor = connect_db()
+    try:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS saved_articles (
+                id SERIAL PRIMARY KEY,
+                chat_id BIGINT NOT NULL,
+                keyword TEXT NOT NULL,
+                title TEXT NOT NULL,
+                url TEXT NOT NULL,
+                summary TEXT,
+                date TIMESTAMP
+            );
+        """)
+        conn.commit()
+        print("✅ Table 'saved_articles' créée (ou déjà existante).")
+    except Exception as e:
+        print(f"❌ Erreur lors de la création de la table : {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
 def initialize_database():
     conn, cursor = connect_db()
     cursor.execute("""
@@ -81,8 +103,13 @@ def get_latest_articles(kw):
 
 def delete_article(conn, cursor, kw, article_id):
     try:
-        table_name = sanitize_keyword(kw)
-        cursor.execute(f"DELETE FROM {table_name} WHERE id = %s;", (article_id,))
+        sanitized_kw = sanitize_keyword(kw)  # Nettoyage + sécurité
+        cursor.execute(
+            "DELETE FROM saved_articles WHERE keyword = %s AND id = %s;",
+            (sanitized_kw, article_id)
+        )
+        if cursor.rowcount == 0:
+            raise Exception("Aucun article trouvé avec cet ID dans cette catégorie.")
         conn.commit()
     except Exception as e:
         print(f"Erreur lors de la suppression de l'article : {e}")
@@ -91,4 +118,5 @@ def delete_article(conn, cursor, kw, article_id):
 if __name__ == "__main__":
     initialize_database()
     create_temporary_articles_table()
+    create_saved_articles_table()
     print("✅ Base de données initialisée.")

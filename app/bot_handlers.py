@@ -182,19 +182,26 @@ def search_news(update, context):
         update.message.reply_text(f"❌ Une erreur est survenue : {e}")
 
 def delete_article_command(update, context):
-    if len(context.args) < 2 :
+    if len(context.args) < 2:
         update.message.reply_text("Utilisation : /delete <mot_clé> <id_article>")
         return
-    kw = context.args[0].lower().replace(" ", "_")
-    article_id = context.args[1]
 
-    if kw not in keywords :
-        update.message.reply_text("Mot-clé non reconnu.")
+    kw = context.args[0].lower().replace(" ", "_")
+
+    try:
+        article_id = int(context.args[1])
+    except ValueError:
+        update.message.reply_text("❌ L'ID de l'article doit être un nombre.")
         return
     
+    if kw not in keywords:
+        update.message.reply_text("❌ Mot-clé non reconnu.")
+        return
+
     try:
         delete_article(cursor, kw, article_id)
-        update.message.reply_text(f"🗑️ Article {article_id} supprimé avec succès de la catégorie {kw}.")
+        conn.commit()  # À ajouter si tu veux valider la suppression
+        update.message.reply_text(f"🗑️ Article {article_id} supprimé avec succès de la catégorie '{kw}'.")
     except Exception as e:
         conn.rollback()
         update.message.reply_text(f"❌ Erreur lors de la suppression : {e}")
@@ -275,5 +282,5 @@ dispatcher.add_handler(CommandHandler("cyber", lambda u, c: search_keyword_news(
 dispatcher.add_handler(CommandHandler("tech", lambda u, c: search_keyword_news(u, c, "tech")))
 dispatcher.add_handler(CommandHandler("search", search_news))
 dispatcher.add_handler(CommandHandler("show", show_articles))
-dispatcher.add_handler(CommandHandler("sup", delete_article_command))
+dispatcher.add_handler(CommandHandler("delete", delete_article_command))
 dispatcher.add_handler(CallbackQueryHandler(handle_callback))

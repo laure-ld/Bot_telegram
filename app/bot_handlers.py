@@ -200,7 +200,7 @@ def delete_article_command(update, context):
 
     try:
         delete_article(cursor, kw, article_id)
-        conn.commit()  # À ajouter si tu veux valider la suppression
+        conn.commit()
         update.message.reply_text(f"🗑️ Article {article_id} supprimé avec succès de la catégorie '{kw}'.")
     except Exception as e:
         conn.rollback()

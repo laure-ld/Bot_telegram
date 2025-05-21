@@ -93,7 +93,7 @@ def save_article_to_db(chat_id, keyword, title, url, date, summary):
         cursor.close()
         conn.close()
 
-def delete_article(kw, article_id):
+def delete_article(cursor, kw, article_id):
     conn, cursor = connect_db()
     try:
         table_name = sanitize_keyword(kw)

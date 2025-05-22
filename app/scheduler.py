@@ -20,27 +20,47 @@ def handle_callback(update, context):
         _, article_id = data.split("|")
         chat_id = query.message.chat.id
 
-        cursor.execute(
-            "SELECT keyword, title FROM temporary_articles WHERE article_id = %s AND chat_id = %s",
-            (article_id, chat_id)
-        )
-        result = cursor.fetchone()
-
-        if not result:
-            query.answer("❌ Article introuvable.")
-            return
-
-        keyword, title = result
-
         try:
             cursor.execute(
-                "INSERT INTO saved_articles (chat_id, keyword, title) VALUES (%s, %s, %s)",
-                (chat_id, keyword, title)
+                "SELECT keyword, title, url, summary, date FROM temporary_articles WHERE article_id = %s AND chat_id = %s",
+                (article_id, chat_id)
             )
+            result = cursor.fetchone()
+
+            if not result:
+                query.answer("❌ Article introuvable.")
+                return
+
+            keyword, title, url, summary, date = result
+
+            cursor.execute(
+                "SELECT 1 FROM saved_articles WHERE chat_id = %s AND title = %s AND keyword = %s",
+                (chat_id, title, keyword)
+            )
+            if cursor.fetchone():
+                query.answer("⚠️ Article déjà sauvegardé dans cette catégorie.")
+                return
+
+            cursor.execute(
+                "INSERT INTO saved_articles (chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s);",
+                (chat_id, keyword, title, url, summary, date)
+            )
+
+            cursor.execute(
+                "SELECT 1 FROM saved_articles WHERE chat_id = %s AND title = %s AND keyword = %s",
+                (chat_id, title, 'archive')
+            )
+            if not cursor.fetchone():
+                cursor.execute(
+                    "INSERT INTO saved_articles (chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s);",
+                    (chat_id, 'archive', title, url, summary, date)
+                )
+
             conn.commit()
             query.answer("✅ Article sauvegardé !")
+
         except Exception as e:
-            print(e)
+            print(f"Erreur lors de la sauvegarde : {e}")
             query.answer("❌ Erreur lors de la sauvegarde.")
 
 # Fonction utilitaire : génère le message formaté pour un article

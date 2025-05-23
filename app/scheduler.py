@@ -116,41 +116,32 @@ def scheduler_daily():
                     short_summary = summary[:40].replace('|', '')
                     article_id = str(uuid.uuid4())[:8]
 
-                    temp_articles[article_id] = {
-                        "query": keyword,
-                        "title": short_title,
-                        "url": url,
-                        "summary": short_summary,
-                        "date": date
-                    }
+                    try:
+                        cursor.execute(
+                            "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                            (article_id, chat_id, keyword, short_title, url, short_summary, date)
+                        )
+                        conn.commit()
+                    except Exception as e:
+                        print(f"Erreur DB : {e}")
+
+                    message = format_article_message(keyword, title, date, source, summary, url)
 
                     keyboard = InlineKeyboardMarkup([
                         [InlineKeyboardButton("💾 Sauvegarder", callback_data=f"save|{article_id}")]
                     ])
 
-                    article_message = format_article_message(keyword, title, date, source, summary, url)
-
-                    for (chat_id,) in subscribers:
-                        try:
-                            cursor.execute(
-                                "INSERT INTO temporary_articles (article_id, chat_id, keyword, title, url, summary, date) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                                (article_id, chat_id, keyword, short_title, url, short_summary, date)
-                            )
-                            conn.commit()
-
-                            bot.send_message(
-                                chat_id=chat_id,
-                                text=article_message,
-                                parse_mode="Markdown",
-                                reply_markup=keyboard,
-                                disable_web_page_preview=True
-                            )
-                        except Exception as e:
-                            print(f"❌ Erreur d'envoi ou d'insertion pour {chat_id} : {e}")
+                    try:
+                        bot.send_message(
+                            chat_id=chat_id,
+                            text=message,
+                            parse_mode="Markdown",
+                            reply_markup=keyboard,
+                            disable_web_page_preview=True
+                        )
+                    except Exception as e:
+                        print(f"❌ Erreur d'envoi d'article à {chat_id} : {e}")
         except Exception as e:
             error_log += f"Erreur lors de la récupération des actualités '{keyword}' : {e}\n"
-
-    if error_log:
-        print(error_log)
 
 scheduler.add_job(scheduler_daily, 'cron', hour=9, minute=0)
